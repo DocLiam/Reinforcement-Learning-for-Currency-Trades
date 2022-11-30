@@ -13,11 +13,6 @@ app = Flask(__name__)
 # price : Always in B per A
 # quantity : Always in amount of A?
 
-# Slay queen frfr ong you got this danre
-# No Thank You
-# Why not
-# Just coz
-
 class User:
     def __init__(self, userID, balance_A, balance_B):
         self.__userID = userID
@@ -141,14 +136,16 @@ def avgPrice(order_list):
 def register():
     global next_userID, user_dict
     
-    return {
-        "success": True,
-        "userID": next_userID
-    }
+    current_userID = next_UserID
     
-    user_dict = {next_userID : User(next_userID, balance_A = Decimal(1), balance_B = Decimal(1))}
+    user_dict = {current_userID : User(current_userID, balance_A = Decimal(1), balance_B = Decimal(1))}
     
     next_userID += 1
+    
+    return {
+        "success": True,
+        "userID": current_userID
+    }
 
 @app.get("/getPrice")
 def getPrice():
