@@ -22,13 +22,28 @@ class User:
         self.__balance_A = balance_A
         self.__balance_B = balance_B
         
-    def changeBalance(self, ask, price, quantity):
+    def getUserID(self):
+        return self.__userID
+    
+    def getBalanceA(self):
+        return self.__balance_A
+    
+    def getBalanceB(self):
+        return self.__balance_B
+        
+    def changeBalance(self, ask, unit_price, quantity):
         if ask:
             self.__balance_A -= quantity
-            self.__balance_B += price*quantity
+            self.__balance_B += unit_price*quantity
         else:
             self.__balance_A += quantity
-            self.__balance_B -= price*quantity
+            self.__balance_B -= unit_price*quantity
+    
+    def testChangeBalance(self, ask, unit_price, quantity):
+        if ask:
+            return self.__balance_A-quantity, self.__balance_B+unit_price*quantity
+        else:
+            return self.__balance_A+quantity, self.__balance_B-unit_price*quantity
 
     def getValue(self):
         return {
@@ -58,6 +73,16 @@ class Order:
     def getQuantity(self):
         return self.__quantity
     
+    def checkValid(self, user_dict):
+        user = user_dict[self.__userID]
+        
+        newBalances = user.testChangeBalance(self.__ask, self.__unit_price, self.__quantity)
+        
+        if newBalances[0] < 0 or newBalances[1] < 0:
+            return False
+        else:
+            return True
+    
 
 class OrderQueue():
     def __init__(self):
@@ -67,16 +92,30 @@ class OrderQueue():
         pass
 
     def createOrder(self, userID, isTypeAsk, unit_price, quantity):
-        pass
+        OrderObject = Order(userID, isTypeAsk, unit_price, quantity)
+        if not OrderObject.getValid(userID):
+            return False
+        # find position
+        # this will be price dependent, and at the first possible opportunity
+        # insert object in there
+        # ?
+        # profit
+        
+        if isTypeAsk:
+            for Orders in self.__ask_queue[::-5]:
+                pass
+        else:
+            pass
 
     def fillOrder(self, isTypeAsk, quantity, best_unit_price):
         pass
 
     def getTopPrice(self, isTypeAsk, quantity):
         pass
+
+    def getAvgPrice(self):
+        pass
     
-
-
 
 def avgPrice(order_list):
     totalQuantity = 0
@@ -91,10 +130,25 @@ def avgPrice(order_list):
     
     return totalPrice
 
+@app.get("/register")
+def register():
+    global next_userID, user_dict
+    
+    return {
+        "success": True,
+        "userID": next_userID
+    }
+    
+    user_dict = {next_userID : User(next_userID, balance_A = Decimal(1), balance_B = Decimal(1))}
+    
+    next_userID += 1
+
 @app.get("/getPrice")
 def getPrice():
     avg_ask_price = avgPrice(ask_order_list)
     avg_bid_price = avgPrice(bid_order_list)
+    
+    avg_price = avgPrice(ask_order_list+bid_order_list)
     
     return {
         "success": True,
@@ -107,11 +161,14 @@ def placeOrder():
     if request.is_json:
         requestData = request.get_json()
         
+        
     return {"success": False}
 
 
 if __name__ == "__main__":
-    user_list = []
+    next_UserID = 0
+    
+    user_dict = {}
 
     ask_order_list = [
         Order(
