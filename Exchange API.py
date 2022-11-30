@@ -4,8 +4,13 @@ from decimal import *
 
 app = Flask(__name__)
 
+# variables : separate tokens by underscore
+# functions : first token is lowercase, every other token starts with capital
+
 # ask : Buy B with A
 # bid : Buy A with B
+# o
+# Slay queen frfr ong you got this danre
 
 class User:
     def __init__(self, balance_A, balance_B):
@@ -44,7 +49,7 @@ class Order:
 
 order_list = [Order(user = User(ask = True, balance_A = 1000, balance_B = 0), ask = True, price = Decimal(1), quantity = Decimal(1000))]
 
-def avgPrice(order_list, num_orders = 10):
+def avgPrice(order_list):
     askTotalQuantity = 0
     bidTotalQuantity = 0
     
@@ -55,6 +60,13 @@ def avgPrice(order_list, num_orders = 10):
         if order.ask():
             askTotalQuantity += order.quantity()
             askTotalWeightedPrice += order.price()*order.quantity()
+        else:
+            bidTotalQuantity += order.quantity()
+            bidTotalWeightedPrice += order.price()*order.quantity()
+
+def getPriceofSome(order_list, num_units, ask=False ):
+    
+    
 
 @app.get("/getPrice")
 def getPrice():
