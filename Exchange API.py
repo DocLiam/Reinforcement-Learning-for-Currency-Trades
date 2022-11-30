@@ -44,7 +44,7 @@ class Order:
 
 order_list = [Order(user = User(ask = True, balance_A = 1000, balance_B = 0), ask = True, price = Decimal(1), quantity = Decimal(1000))]
 
-def avgPrice(order_list):
+def avgPrice(order_list, num_orders = 10):
     askTotalQuantity = 0
     bidTotalQuantity = 0
     
