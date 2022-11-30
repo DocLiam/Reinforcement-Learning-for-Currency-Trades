@@ -60,7 +60,7 @@ class Order:
 
 class OrderQueue():
     def __init__():
-
+        pass
 
 
 ask_order_list = [Order(user = User(balance_A = 1000, balance_B = 0), ask = True, unit_price = Decimal(1), quantity = Decimal(1000))]
