@@ -9,7 +9,9 @@ app = Flask(__name__)
 
 # ask : Buy B with A (like asking USD for BTC)
 # bid : Buy A with B (vice versa)
-# order : an object that has a certain amount of A or B and wants a certain rate. `buy` divided by `with`
+# order : an object that has a certain amount of A or B and wants a certain rate.
+# price : Always in B per A
+# quantity : Always in amount of A?
 
 # Slay queen frfr ong you got this danre
 # No Thank You
@@ -51,9 +53,6 @@ class User:
                 "Value in B" : self.__balance_B + self.getPrice()["avgAskPrice"]*self.__balance_A
             }
 
-# price : Always in B per A
-# quantity : Always in amount of A
-
 class Order:
     def __init__(self, userID, ask, unit_price, quantity):
         self.__userID = userID
@@ -92,8 +91,8 @@ class OrderQueue():
         pass
 
     def createOrder(self, userID, isTypeAsk, unit_price, quantity):
-        OrderObject = Order(userID, isTypeAsk, unit_price, quantity)
-        if not OrderObject.getValid(userID):
+        ThisOrder = Order(userID, isTypeAsk, unit_price, quantity)
+        if not ThisOrder.getValid(userID):
             return False
         # find position
         # this will be price dependent, and at the first possible opportunity
@@ -102,8 +101,16 @@ class OrderQueue():
         # profit
         
         if isTypeAsk:
+            index = len(self.__ask_queue)
             for Orders in self.__ask_queue[::-5]:
-                pass
+                if Orders.getPrice > ThisOrder.getPrice:
+                    for i in range(index, len(ask_order_list)):
+                        if self.__ask_queue[i].getPrice <= ThisOrder.getPrice:
+                            index = i
+                            continue
+
+                index += 5
+                            
         else:
             pass
 
