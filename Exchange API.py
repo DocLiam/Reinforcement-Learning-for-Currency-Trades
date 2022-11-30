@@ -4,13 +4,21 @@ from decimal import *
 
 app = Flask(__name__)
 
-# Ask : Buy B with A
-# Bid : Buy A with B
+# ask : Buy B with A
+# bid : Buy A with B
 
 class User:
-    def __init__(self):
-        self.__balance_A = 0
-        self.__balance_B = 0
+    def __init__(self, balance_A, balance_B):
+        self.__balance_A = balance_A
+        self.__balance_B = balance_B
+        
+    def changeBalance(self, ask, price, quantity):
+        if ask:
+            self.__balance_A -= quantity
+            self.__balance_B += price*quantity
+        else:
+            self.__balance_A += quantity
+            self.__balance_B -= price*quantity
 
 # price : Always in B per A
 # quantity : Always in amount of A
@@ -34,10 +42,19 @@ class Order:
         return self.__quantity
     
 
-order_list = [Order(userID = 0, ask = True, price = Decimal(1), quantity = Decimal(1000))]
+order_list = [Order(user = User(ask = True, balance_A = 1000, balance_B = 0), ask = True, price = Decimal(1), quantity = Decimal(1000))]
 
 def avgPrice(order_list):
-    askTotal
+    askTotalQuantity = 0
+    bidTotalQuantity = 0
+    
+    askTotalWeightedPrice = 0
+    bidTotalWeightedPrice = 0
+    
+    for order in order_list:
+        if order.ask():
+            askTotalQuantity += order.quantity()
+            askTotalWeightedPrice += order.price()*order.quantity()
 
 @app.get("/getPrice")
 def getPrice():
