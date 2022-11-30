@@ -17,7 +17,8 @@ app = Flask(__name__)
 # Just coz
 
 class User:
-    def __init__(self, balance_A, balance_B):
+    def __init__(self, userID, balance_A, balance_B):
+        self.__userID = userID
         self.__balance_A = balance_A
         self.__balance_B = balance_B
         
@@ -39,8 +40,8 @@ class User:
 # quantity : Always in amount of A
 
 class Order:
-    def __init__(self, user, ask, unit_price, quantity):
-        self.__user = user
+    def __init__(self, userID, ask, unit_price, quantity):
+        self.__userID = userID
         self.__ask = ask
         self.__quantity = quantity
         self.__unit_price = unit_price
@@ -59,12 +60,23 @@ class Order:
     
 
 class OrderQueue():
-    def __init__():
+    def __init__(self):
+        self.__ask_queue = []
+        self.__bid_queue = []
+        
         pass
 
+    def createOrder(self, userID, isTypeAsk, unit_price, quantity):
+        pass
 
-ask_order_list = [Order(user = User(balance_A = 1000, balance_B = 0), ask = True, unit_price = Decimal(1), quantity = Decimal(1000))]
-bid_order_list = []
+    def fillOrder(self, isTypeAsk, quantity, best_unit_price):
+        pass
+
+    def getTopPrice(self, isTypeAsk, quantity):
+        pass
+    
+
+
 
 def avgPrice(order_list):
     totalQuantity = 0
@@ -79,20 +91,16 @@ def avgPrice(order_list):
     
     return totalPrice
 
-def getPriceofSome(order_list, num_units, ask=False):
-    pass #TODO
-    
-
 @app.get("/getPrice")
 def getPrice():
     avg_ask_price = avgPrice(ask_order_list)
     avg_bid_price = avgPrice(bid_order_list)
     
     return {
-        "success": True, 
-        "avgAskPrice": avg_ask_price, 
+        "success": True,
+        "avgAskPrice": avg_ask_price,
         "avgBidPrice": avg_bid_price
-    } 
+    }
     
 @app.post("/placeOrder")
 def placeOrder():
@@ -101,7 +109,23 @@ def placeOrder():
         
     return {"success": False}
 
-print(avgPrice(ask_order_list))
 
 if __name__ == "__main__":
+    user_list = []
+
+    ask_order_list = [
+        Order(
+            userID = 0, 
+            ask = True, 
+            unit_price = Decimal(1), 
+            quantity = Decimal(1000)), 
+        Order(
+            userID = 1, 
+            ask = True, 
+            unit_price = Decimal(1.5), 
+            quantity = Decimal(500))
+        ]
+    bid_order_list = []
+    print(avgPrice(ask_order_list))
+
     app.run(host="127.0.0.1", port=8080)
