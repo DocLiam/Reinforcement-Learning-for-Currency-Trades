@@ -6,8 +6,8 @@ x = requests.get(url+"/register")
 print(x.json())
 
 y = requests.post(url+"/placeOrder", json={"userID" : x.json()["userID"],
-                   "ask" : True,
-                   "unitPrice" : 1.0,
-                   "quantity" : 1.0})
+                   "ask" : False,
+                   "unitPrice" : 2.1,
+                   "quantity" : 1.5})
 print(x.text)
 print(y.text)
