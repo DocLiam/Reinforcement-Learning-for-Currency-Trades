@@ -60,6 +60,9 @@ class Order:
         
         self.__time_stamp = datetime.now()
     
+    def getUserID(self):
+        return self.__userID
+    
     def getAsk(self):
         return self.__ask
     
@@ -97,8 +100,7 @@ class OrderQueue():
     def bidQueueEmpty(self):
         return len(self.__bid_queue) == 0
     
-    def createOrder(self, userID, is_type_ask, unit_price, quantity):
-        ThisOrder = Order(userID, is_type_ask, unit_price, quantity)
+    def insertOrder(self, ThisOrderObject):
         
         # find position
         # this will be price dependent, and at the first possible opportunity
@@ -106,40 +108,52 @@ class OrderQueue():
         # ?
         # profit
         
-        if is_type_ask: #Ask, so highest price is ideal for seller. 
+        if ThisOrderObject.getAsk(): #Ask, so highest price is ideal for seller. 
             index = len(self.__ask_queue)
-            for OrderObject in self.__ask_queue[::-5]+[]: #While orders are better priced for the buyer, move the index left
-                if OrderObject.getPrice() > ThisOrder.getPrice(): #triggers once a worse order has been found
+            for ExistingOrderObject in self.__ask_queue[::-5]+[]: #While orders are better priced for the buyer, move the index left
+                if ExistingOrderObject.getPrice() > ThisOrderObject.getPrice(): #triggers once a worse order has been found
                     for i in range(index, len(self.__ask_queue)): #moves to the right
-                        if self.__ask_queue[i].getPrice() <= ThisOrder.getPrice(): #finds the same or better order
+                        if self.__ask_queue[i].getPrice() <= ThisOrderObject.getPrice(): #finds the same or better order
                             index = i
                             continue
                 index -= 5
             index = 0
 
-            self.__ask_queue.insert(index, ThisOrder)
+            self.__ask_queue.insert(index, ThisOrderObject)
 
             # increase the avg tallies appropriately
-            self.__ask_sum += unit_price * quantity
-            self.__ask_quantity += quantity
+            self.__ask_sum += ThisOrderObject.getPrice()*ThisOrderObject.getQuantity()
+            self.__ask_quantity += ThisOrderObject.getQuantity()
                             
         else:
             index = len(self.__bid_queue)
-            for OrderObject in self.__bid_queue[::-5]+[]: #While orders are better priced for the buyer, move the index left
-                if OrderObject.getPrice() < ThisOrder.getPrice(): #triggers once a worse order has been found
+            for ExistingOrderObject in self.__bid_queue[::-5]+[]: #While orders are better priced for the buyer, move the index left
+                if ExistingOrderObject.getPrice() > ThisOrderObject.getPrice(): #triggers once a worse order has been found
                     for i in range(index, len(self.__bid_queue)): #moves to the right
-                        if self.__bid_queue[i].getPrice() >= ThisOrder.getPrice(): #finds the same or better order
+                        if self.__bid_queue[i].getPrice() <= ThisOrderObject.getPrice(): #finds the same or better order
                             index = i
                             continue
                 index -= 5
             index = 0
 
-            self.__bid_queue.insert(index, ThisOrder)
+            self.__bid_queue.insert(index, ThisOrderObject)
 
             # increase the avg tallies appropriately
-            self.__bid_sum += unit_price * quantity
-            self.__bid_quantity += quantity
+            self.__bid_sum += ThisOrderObject.getPrice()*ThisOrderObject.getQuantity()
+            self.__bid_quantity += ThisOrderObject.getQuantity()
 
+    def removeOrder(self, ask, userID):
+        if ask:
+            OrderObject = next(filter(lambda x : x.getUserID == userID, self.__ask_queue))
+            
+            if OrderObject:
+                self.__ask_queue.remove(OrderObject)
+        else:
+            OrderObject = next(filter(lambda x : x.getUserID == userID, self.__bid_queue))
+            
+            if OrderObject:
+                self.__bid_queue.remove(OrderObject)
+    
     def fillOrder(self, OrderObject):
         pass
 
@@ -169,7 +183,21 @@ def register():
         "success" : True,
         "userID" : current_userID
     }
-
+    
+@app.get("/getbalance")
+def getPrice():
+    if request.is_json:
+        request_data = request.get_json()
+        userObject = user_dict[request_data["userID"]]
+        
+        return {
+            "success" : True,
+            "balanceA" : userObject.getBalanceA(),
+            "balanceB" : userObject.getBalanceB()
+        }
+    
+    return {"success" : False}
+    
 @app.get("/getPrice")
 def getPrice():
     avg_price_data = OrderQueueObject.getAvgPrice()
