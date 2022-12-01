@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
 from decimal import *
+import asyncio
 
 app = Flask(__name__)
 
@@ -68,11 +69,11 @@ class Order:
         return self.__quantity
     
     def checkValid(self, user_dict):
-        user = user_dict[self.__userID]
+        UserObject = user_dict[self.__userID]
         
-        newBalances = user.testChangeBalance(self.__ask, self.__unit_price, self.__quantity)
+        new_balances = UserObject.testChangeBalance(self.__ask, self.__unit_price, self.__quantity)
         
-        if newBalances[0] < 0 or newBalances[1] < 0:
+        if new_balances[0] < 0 or new_balances[1] < 0:
             return False
         else:
             return True
@@ -82,32 +83,57 @@ class OrderQueue():
     def __init__(self):
         self.__ask_queue = []
         self.__bid_queue = []
+
+        self.__ask_sum = 0
+        self.__ask_quantity = 0
+
+        self.__ask_sum = 0
+        self.__ask_quantity = 0
         
         pass
 
-    def createOrder(self, userID, isTypeAsk, unit_price, quantity):
-        ThisOrder = Order(userID, isTypeAsk, unit_price, quantity)
-        if not ThisOrder.getValid(userID):
-            return False
+    def createOrder(self, userID, is_type_ask, unit_price, quantity):
+        ThisOrder = Order(userID, is_type_ask, unit_price, quantity)
+        
         # find position
         # this will be price dependent, and at the first possible opportunity
         # insert object in there
         # ?
         # profit
         
-        if isTypeAsk:
+        if is_type_ask: #Ask, so highest price is ideal for seller. 
             index = len(self.__ask_queue)
-            for Orders in self.__ask_queue[::-5]:
-                if Orders.getPrice > ThisOrder.getPrice:
-                    for i in range(index, len(ask_order_list)):
-                        if self.__ask_queue[i].getPrice <= ThisOrder.getPrice:
+            for OrderObject in self.__ask_queue[::-5]+[]: #While orders are better priced for the buyer, move the index left
+                if OrderObject.getPrice() > ThisOrder.getPrice(): #triggers once a worse order has been found
+                    for i in range(index, len(self.__ask_queue)): #moves to the right
+                        if self.__ask_queue[i].getPrice() <= ThisOrder.getPrice(): #finds the same or better order
                             index = i
                             continue
+                index -= 5
+            index = 0
 
-                index += 5
+            self.__ask_queue.insert(index, ThisOrder)
+
+            # increase the avg tallies appropriately
+            self.__ask_sum += unit_price * quantity
+            self.__ask_quantity += quantity
                             
         else:
-            pass
+            index = len(self.__bid_queue)
+            for OrderObject in self.__bid_queue[::-5]+[]: #While orders are better priced for the buyer, move the index left
+                if OrderObject.getPrice() < ThisOrder.getPrice(): #triggers once a worse order has been found
+                    for i in range(index, len(self.__bid_queue)): #moves to the right
+                        if self.__bid_queue[i].getPrice() >= ThisOrder.getPrice(): #finds the same or better order
+                            index = i
+                            continue
+                index -= 5
+            index = 0
+
+            self.__bid_queue.insert(index, ThisOrder)
+
+            # increase the avg tallies appropriately
+            self.__bid_sum += unit_price * quantity
+            self.__bid_quantity += quantity
 
     def fillOrder(self, isTypeAsk, quantity, best_unit_price):
         pass
@@ -116,48 +142,52 @@ class OrderQueue():
         pass
 
     def getAvgPrice(self):
-        pass
-    
+        return {
+            "avgAskPrice" : self.__ask_sum/self.__ask_quantity,
+            "avgBidPrice" : self.__bid_sum/self.__bid_quantity,
+            "avgPrice" : (self.__ask_sum/self.__ask_quantity + self.__bid_sum/self.__bid_quantity)//Decimal(2)
+        }
 
-def avgPrice(order_list):
-    totalQuantity = 0
-    totalWeightedPrice = 0
-    
-    for order in order_list:
-        if order.getAsk():
-            totalQuantity += order.getQuantity()
-            totalWeightedPrice += order.getPrice()*order.getQuantity()
-    
-    totalPrice = totalWeightedPrice/totalQuantity
-    
-    return totalPrice
+    def visualiseQueue(self, ask = True):
+        if ask:
+            for i in self.__ask_queue:
+                print(i.getPrice(), i.getQuantity())
+        else:
+            for i in self.__bid_queue:
+                print(i.getPrice(), i.getQuantity())
+
 
 @app.get("/register")
 def register():
     global next_userID, user_dict
     
     current_userID = next_UserID
-    
     user_dict = {current_userID : User(current_userID, balance_A = Decimal(1), balance_B = Decimal(1))}
-    
     next_userID += 1
     
     return {
-        "success": True,
-        "userID": current_userID
+        "success" : True,
+        "userID" : current_userID
     }
 
 @app.get("/getPrice")
 def getPrice():
-    avg_ask_price = avgPrice(ask_order_list)
-    avg_bid_price = avgPrice(bid_order_list)
-    
-    avg_price = avgPrice(ask_order_list+bid_order_list)
+    avg_price_Data = OrderQueueObject.getAvgPrice()
     
     return {
-        "success": True,
-        "avgAskPrice": avg_ask_price,
-        "avgBidPrice": avg_bid_price
+        "success" : True,
+        "avgAskPrice" : avg_ask_price,
+        "avgBidPrice" : avg_bid_price,
+        "avgPrice" : avg_price
+    }
+
+@app.get("/getHistoricPrices")
+def getHistoricPrices():
+    return {
+        "success" : True,
+        "avgAskPrice" : historic_ask_prices,
+        "avgBidPrice" : historic_bid_prices,
+        "avgPrice" : historic_prices
     }
     
 @app.post("/placeOrder")
@@ -168,25 +198,21 @@ def placeOrder():
         
     return {"success": False}
 
+async def updatePrices():
+    global historic_ask_prices, historic_bid_prices, historic_prices
+    
+    while True:
+        historic_ask_prices.append(avgPrice)
+        await asyncio.sleep(1)
 
 if __name__ == "__main__":
     next_UserID = 0
-    
     user_dict = {}
 
-    ask_order_list = [
-        Order(
-            userID = 0, 
-            ask = True, 
-            unit_price = Decimal(1), 
-            quantity = Decimal(1000)), 
-        Order(
-            userID = 1, 
-            ask = True, 
-            unit_price = Decimal(1.5), 
-            quantity = Decimal(500))
-        ]
-    bid_order_list = []
-    print(avgPrice(ask_order_list))
+    OrderQueueObject = OrderQueue
+    
+    historic_ask_prices = []
+    historic_bid_prices = []
+    historic_prices = []
 
     app.run(host="127.0.0.1", port=8080)
