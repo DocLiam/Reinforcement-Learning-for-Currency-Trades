@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
 from decimal import *
-import asyncio
+from threading import *
+from time import *
 
 app = Flask(__name__)
 
@@ -87,11 +88,15 @@ class OrderQueue():
         self.__ask_sum = 0
         self.__ask_quantity = 0
 
-        self.__ask_sum = 0
-        self.__ask_quantity = 0
-        
-        pass
+        self.__bid_sum = 0
+        self.__bid_quantity = 0
 
+    def askQueueEmpty(self):
+        return len(self.__ask_queue) == 0
+    
+    def bidQueueEmpty(self):
+        return len(self.__bid_queue) == 0
+    
     def createOrder(self, userID, is_type_ask, unit_price, quantity):
         ThisOrder = Order(userID, is_type_ask, unit_price, quantity)
         
@@ -135,18 +140,14 @@ class OrderQueue():
             self.__bid_sum += unit_price * quantity
             self.__bid_quantity += quantity
 
-    def fillOrder(self, isTypeAsk, quantity, best_unit_price):
+    def fillOrder(self, OrderObject):
         pass
 
-    def getTopPrice(self, isTypeAsk, quantity):
+    def getTopPrice(self, OrderObject):
         pass
 
     def getAvgPrice(self):
-        return {
-            "avgAskPrice" : self.__ask_sum/self.__ask_quantity,
-            "avgBidPrice" : self.__bid_sum/self.__bid_quantity,
-            "avgPrice" : (self.__ask_sum/self.__ask_quantity + self.__bid_sum/self.__bid_quantity)//Decimal(2)
-        }
+        return self.__ask_sum/self.__ask_quantity, self.__bid_sum/self.__bid_quantity, (self.__ask_sum/self.__ask_quantity + self.__bid_sum/self.__bid_quantity)/2.0
 
     def visualiseQueue(self, ask = True):
         if ask:
@@ -159,11 +160,10 @@ class OrderQueue():
 
 @app.get("/register")
 def register():
-    global next_userID, user_dict
+    global current_userID, user_dict
     
-    current_userID = next_UserID
-    user_dict = {current_userID : User(current_userID, balance_A = Decimal(1), balance_B = Decimal(1))}
-    next_userID += 1
+    current_userID += 1
+    user_dict = {current_userID : User(current_userID, balance_A = 1.0, balance_B = 1.0)}
     
     return {
         "success" : True,
@@ -172,13 +172,13 @@ def register():
 
 @app.get("/getPrice")
 def getPrice():
-    avg_price_Data = OrderQueueObject.getAvgPrice()
+    avg_price_data = OrderQueueObject.getAvgPrice()
     
     return {
         "success" : True,
-        "avgAskPrice" : avg_ask_price,
-        "avgBidPrice" : avg_bid_price,
-        "avgPrice" : avg_price
+        "avgAskPrice" : avg_price_data[0],
+        "avgBidPrice" : avg_price_data[1],
+        "avgPrice" : avg_price_data[2]
     }
 
 @app.get("/getHistoricPrices")
@@ -193,26 +193,41 @@ def getHistoricPrices():
 @app.post("/placeOrder")
 def placeOrder():
     if request.is_json:
-        requestData = request.get_json()
+        request_data = request.get_json()
         
+        OrderObject = Order(request_data["userID"],
+                            request_data["ask"],
+                            request_data["unitPrice"],
+                            request_data["quantity"])
+        
+        if not OrderObject.checkValid(user_dict):
+            return {"success": False}
+        else:
+            pass
         
     return {"success": False}
 
-async def updatePrices():
+def updatePrices():
     global historic_ask_prices, historic_bid_prices, historic_prices
     
     while True:
-        historic_ask_prices.append(avgPrice)
-        await asyncio.sleep(1)
+        historic_ask_prices.append(1.0 if OrderQueueObject.askQueueEmpty() else OrderQueueObject.getAvgPrice()[0])
+        historic_bid_prices.append(1.0 if OrderQueueObject.bidQueueEmpty() else OrderQueueObject.getAvgPrice()[1])
+        historic_prices.append(1.0 if OrderQueueObject.askQueueEmpty() or OrderQueueObject.askQueueEmpty() else OrderQueueObject.getAvgPrice()[2])
+        
+        sleep(1)
 
 if __name__ == "__main__":
-    next_UserID = 0
+    current_userID = -1
     user_dict = {}
 
-    OrderQueueObject = OrderQueue
+    OrderQueueObject = OrderQueue()
     
     historic_ask_prices = []
     historic_bid_prices = []
     historic_prices = []
+    
+    update_prices_thread = Thread(target=updatePrices, name="updatePrices")
+    update_prices_thread.start()
 
     app.run(host="127.0.0.1", port=8080)
