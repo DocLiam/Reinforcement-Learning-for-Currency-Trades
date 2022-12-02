@@ -9,7 +9,7 @@ getcontext().prec = 64
 model_name = input("Model name: ")
 
 Trade_Model = Model_Class()
-Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000005, cycles=100)
+Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=5)
 
 Trade_Data_test = Data_Class()
 
@@ -21,13 +21,13 @@ Trade_Data_uncertainty = Data_Class()
 
 url = "http://127.0.0.1:8080"
 
-request_register = requests.get(url + "/register").json()
+request_register = requests.get(url + "/register", json = {"startBalanceA" : 10.0, "startBalanceB" : 10.0}).json()
 
 userID = request_register["userID"]
 
 predicted_count = 10
 
-average_size = 4
+average_size = 6
 
 start_flag = True
 
@@ -125,8 +125,10 @@ while True:
     target_proportion_B = Decimal(0)
     
     for i in range(predicted_count):
-        temp_proportion_A = compounded_actual_change_upper[i]/(compounded_actual_change_upper[i]-compounded_actual_change_lower[i])
-        temp_proportion_B = compounded_actual_change_lower[i]/(compounded_actual_change_upper[i]-compounded_actual_change_lower[i])
+        upper_lower_diff = (compounded_actual_change_upper[i]-compounded_actual_change_lower[i])
+            
+        temp_proportion_A = compounded_actual_change_upper[i]/upper_lower_diff
+        temp_proportion_B = compounded_actual_change_lower[i]/upper_lower_diff
         
         if temp_proportion_A > 1 or temp_proportion_B > 0:
             temp_proportion_A = Decimal(1)
@@ -186,12 +188,7 @@ while True:
     
     
     
-    plt.clf()
-    plt.plot(x_values, y_values_average)
-    plt.plot(x_values[-predicted_count:], y_values_lower)
-    plt.plot(x_values[-predicted_count:], y_values_upper)
-    plt.plot(x_values[:-predicted_count], previous_rates[-Trade_Model.input_count:])
-    plt.pause(0.001)
+
     
     
     

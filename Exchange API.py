@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import *
 from threading import *
 from time import *
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
@@ -260,15 +261,19 @@ class OrderQueue():
 
 @app.get("/register")
 def register():
-    global current_userID, user_dict
+    if request.is_json:
+        global current_userID, user_dict
+        request_data = request.get_json()
+        
+        current_userID += 1
+        user_dict[current_userID] = User(current_userID, balance_A = request_data["startBalanceA"], balance_B = request_data["startBalanceB"])
+        
+        return {
+            "success" : True,
+            "userID" : current_userID
+        }
     
-    current_userID += 1
-    user_dict[current_userID] = User(current_userID, balance_A = 10.0, balance_B = 10.0)
-    
-    return {
-        "success" : True,
-        "userID" : current_userID
-    }
+    return {"success" : False}
     
 @app.get("/getBalance")
 def getPrice():
@@ -295,8 +300,7 @@ def getValue():
         return {
             "success" : True,
             "valueA" : user_value[0],
-            "valueB" : user_value[1],
-            
+            "valueB" : user_value[1]
         }
     
     return {"success" : False}
@@ -355,7 +359,7 @@ def placeOrder():
     return {"success": False}
 
 def updatePrices():
-    global historic_ask_prices, historic_bid_prices, historic_prices, time_passed
+    global historic_ask_prices, historic_bid_prices, historic_prices, time_passed, time_values, value_values
     global last_ask_price, last_bid_price, last_price
     
     while True:
@@ -377,13 +381,43 @@ def updatePrices():
         
         OrderQueueObject.visualiseQueue()
         
+        time_values.append(time_passed)
+        
         time_passed += 1
+        
+        avg_value = 0
+        
+        for userID in user_dict:
+            user_value = user_dict[userID].getValue()
+            
+            avg_value += (user_value[0]+user_value[1])/len(user_dict)
+            
+        value_values.append(avg_value)
+        
+        print("AVERAGE VALUE: ", avg_value)
+        
+        if len(time_values) > 200:
+            time_values = time_values[-200:]
+        if len(value_values) > 200:
+            value_values = value_values[-200:]
+        if len(historic_ask_prices) > 3000:
+            historic_ask_prices = historic_ask_prices[-3000:]
+        if len(historic_bid_prices) > 3000:
+            historic_bid_prices = historic_bid_prices[-3000:]
+        if len(historic_prices) > 3000:
+            historic_prices = historic_prices[-3000:]
+
+#def visualiseValue():
+    #while True:
+        #plt.clf()
+        #plt.plot(time_values, value_values)
+        #plt.pause(1)
 
 if __name__ == "__main__":
     current_userID = -1
     user_dict = {}
     
-    time_passed = 0
+    time_passed = 600
     time_dict = {}
 
     OrderQueueObject = OrderQueue()
@@ -392,11 +426,17 @@ if __name__ == "__main__":
     last_bid_price = 1.0
     last_price = 1.0
     
-    historic_ask_prices = [last_ask_price for i in range(600)]
-    historic_bid_prices = [last_bid_price for i in range(600)]
-    historic_prices = [last_price for i in range(600)]
+    historic_ask_prices = [last_ask_price for i in range(time_passed)]
+    historic_bid_prices = [last_bid_price for i in range(time_passed)]
+    historic_prices = [last_price for i in range(time_passed)]
+    
+    time_values = [i for i in range(time_passed)]
+    value_values = [0 for i in range(time_passed)]
     
     update_prices_thread = Thread(target=updatePrices, name="updatePrices")
     update_prices_thread.start()
+    
+    #visualise_value_thread = Thread(target=visualiseValue, name="visualiseValue")
+    #visualise_value_thread.start()
 
     app.run(host="127.0.0.1", port=8080)
