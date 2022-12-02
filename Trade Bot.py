@@ -9,7 +9,7 @@ getcontext().prec = 64
 model_name = input("Model name: ")
 
 Trade_Model = Model_Class()
-Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=5)
+Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0000001, cycles=5)
 
 Trade_Data_test = Data_Class()
 
@@ -162,7 +162,7 @@ while True:
         proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
     
 
-    desired_price = sum(y_values_average[-predicted_count:])/Decimal(predicted_count)
+    desired_price = y_values_average[-predicted_count+1]
     
     
     if proportion_change_A <= 0:
@@ -188,7 +188,12 @@ while True:
     
     
     
-
+    plt.clf()
+    plt.plot(x_values, y_values_average)
+    plt.plot(x_values[-predicted_count:], y_values_lower)
+    plt.plot(x_values[-predicted_count:], y_values_upper)
+    plt.plot(x_values[:-predicted_count], previous_rates[-Trade_Model.input_count:])
+    plt.pause(0.001)
     
     
     
@@ -203,3 +208,5 @@ while True:
     
     if len(previous_rates) > 600:
         previous_rates = previous_rates[-600:]
+        
+    sleep(random()/10.0)
