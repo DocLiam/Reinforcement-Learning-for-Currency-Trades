@@ -9,7 +9,7 @@ getcontext().prec = 64
 model_name = input("Model name: ")
 
 Trade_Model = Model_Class()
-Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0000001, cycles=5)
+Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0000005, cycles=5)
 
 Trade_Data_test = Data_Class()
 
@@ -21,7 +21,7 @@ Trade_Data_uncertainty = Data_Class()
 
 url = "http://127.0.0.1:8080"
 
-request_register = requests.get(url + "/register", json = {"startBalanceA" : 10.0, "startBalanceB" : 10.0}).json()
+request_register = requests.get(url + "/register", json = {"startBalanceA" : 100.0, "startBalanceB" : 100.0}).json()
 
 userID = request_register["userID"]
 
@@ -162,7 +162,7 @@ while True:
         proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
     
 
-    desired_price = y_values_average[-predicted_count+1]
+    desired_price = sum(y_values_average[-predicted_count:])/Decimal(predicted_count)
     
     
     if proportion_change_A <= 0:
@@ -187,13 +187,13 @@ while True:
     print("\n")
     
     
-    
     plt.clf()
     plt.plot(x_values, y_values_average)
     plt.plot(x_values[-predicted_count:], y_values_lower)
     plt.plot(x_values[-predicted_count:], y_values_upper)
     plt.plot(x_values[:-predicted_count], previous_rates[-Trade_Model.input_count:])
     plt.pause(0.001)
+
     
     
     
