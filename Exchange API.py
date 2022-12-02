@@ -373,7 +373,7 @@ def updatePrices():
         last_bid_price = historic_bid_prices[-1]
         last_price = historic_prices[-1]
         
-        sleep(1)
+        sleep(0.1)
 
         print("Ask Price: ", historic_ask_prices[-1])
         print("Bid Price: ", historic_bid_prices[-1])
@@ -417,7 +417,7 @@ if __name__ == "__main__":
     current_userID = -1
     user_dict = {}
     
-    time_passed = 600
+    time_passed = 3000
     time_dict = {}
 
     OrderQueueObject = OrderQueue()

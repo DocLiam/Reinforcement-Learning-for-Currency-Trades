@@ -162,7 +162,7 @@ while True:
         proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
     
 
-    desired_price = sum(y_values_average[-predicted_count:])/Decimal(predicted_count)
+    desired_price = previous_rates[-1]
     
     
     if proportion_change_A <= 0:
@@ -209,4 +209,4 @@ while True:
     if len(previous_rates) > 600:
         previous_rates = previous_rates[-600:]
         
-    sleep(random()/10.0)
+    sleep(random()/100.0)

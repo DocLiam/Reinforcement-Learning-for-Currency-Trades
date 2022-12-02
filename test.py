@@ -7,7 +7,8 @@ print(x.json())
 
 y = requests.post(url+"/placeOrder", json={"userID" : x.json()["userID"],
                    "ask" : True,
-                   "unitPrice" : 0.2,
+                   "unitPrice" : 1.6,
                    "quantity" : 50.0})
+
 print(x.text)
 print(y.text)
