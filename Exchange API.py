@@ -287,8 +287,8 @@ def getPrice():
     
     return {"success" : False}
     
-@app.get("/getPrice")
-def getPrice2(): #Electric Boogaloo
+@app.get("/getCurrentPrice")
+def getCurrentPrice():
     avg_price_data = OrderQueueObject.getAvgPrice()
     
     return {
@@ -300,12 +300,24 @@ def getPrice2(): #Electric Boogaloo
 
 @app.get("/getHistoricPrices")
 def getHistoricPrices():
-    return {
-        "success" : True,
-        "avgAskPrice" : historic_ask_prices,
-        "avgBidPrice" : historic_bid_prices,
-        "avgPrice" : historic_prices
-    }
+    if request.is_json:
+        global time_dict
+        
+        request_data = request.get_json()
+        
+        index = 0
+        
+        if request_data["onlyRecent"]:
+            index = time_dict[request_data["userID"]] - time_passed
+        
+        time_dict[request_data["userID"]] = time_passed
+        
+        return {
+            "success" : True,
+            "avgAskPrice" : historic_ask_prices[index:],
+            "avgBidPrice" : historic_bid_prices[index:],
+            "avgPrice" : historic_prices[index:]
+        }
     
 @app.post("/placeOrder")
 def placeOrder():
@@ -331,7 +343,7 @@ def placeOrder():
     return {"success": False}
 
 def updatePrices():
-    global historic_ask_prices, historic_bid_prices, historic_prices
+    global historic_ask_prices, historic_bid_prices, historic_prices, time_passed
     
     while True:
         avg_price_data = OrderQueueObject.getAvgPrice()
@@ -347,10 +359,15 @@ def updatePrices():
         print("Price: ", historic_prices[-1])
         
         OrderQueueObject.visualiseQueue()
+        
+        time_passed += 1
 
 if __name__ == "__main__":
     current_userID = -1
     user_dict = {}
+    
+    time_passed = 0
+    time_dict = {}
 
     OrderQueueObject = OrderQueue()
     

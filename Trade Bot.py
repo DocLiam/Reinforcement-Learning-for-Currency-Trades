@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from DeepLearner import *
 from decimal import *
 from time import *
+import requests
 
 getcontext().prec = 64
 
@@ -9,17 +10,18 @@ model_name = input("Model name: ")
 model_count = int(input("Model count: "))
 
 Trade_Model = Model_Class()
-Trade_Model.load(model_name+str(i), min_diff=0.00000001, learning_rate=0.000001, cycles=10)
+Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=10)
 
 Trade_Data = Data_Class()
 
 Trade_Data_uncertainty = Data_Class()
 
 
+url = "http://127.0.0.1:8080"
 
+request_register = requests.get(url + "/register").json()
 
-A_balance = Decimal(0)
-B_balance = Decimal(0)
+userID = request_register["userID"]
 
 predicted_count = 10
 
@@ -31,53 +33,31 @@ start_flag = True
 
 x_values = [i for i in range(Trade_Model.input_count+predicted_count)]
 
+request_getHistoricPrices = requests.get(url + "/getHistoricPrices", json = {"userID" : userID, "onlyRecent" : False}).json()
+previous_rates = request_getHistoricPrices["avgPrice"]
+
 while True:
-    temp_C1C2_klines = client.get_historical_klines(ticker, Client.KLINE_INTERVAL_1MINUTE, "1 minute ago UTC")
+    request_getBalance = requests.get(url + "/getBalance", json = {"userID" : userID}).json()
     
-    try:
-        if temp_C1C2_klines[-1][0] != C1C2_klines[-1][0]:
-            C1C2_klines = C1C2_klines[1:]+temp_C1C2_klines
-            
-        if len(ticker[3:]) == 3:
-            C1USDT_rate = Decimal(client.get_historical_klines(ticker[:3] + "USDT", Client.KLINE_INTERVAL_1MINUTE, "1 minute ago UTC")[0][4])
-            C2USDT_rate = Decimal(client.get_historical_klines(ticker[3:] + "USDT", Client.KLINE_INTERVAL_1MINUTE, "1 minute ago UTC")[0][4])
-        else:
-            C1USDT_rate = Decimal(temp_C1C2_klines[-1][4])
-            C2USDT_rate = Decimal(1)
-    except:
-        continue
+    balance_A = request_getBalance["balanceA"]
+    balance_B = request_getBalance["balanceB"]
     
-    previous_rates = [Decimal(element[4]) for element in C1C2_klines]
+    request_getHistoricPrices = requests.get(url + "/getHistoricPrices", json = {"userID" : userID, "onlyRecent" : True}).json()
+    previous_rates += request_getHistoricPrices["avgPrice"]
+    
+    unit_rate = previous_rates[-1]
 
     moving_average_previous_rates = [sum(previous_rates[i:i+average_size])/Decimal(average_size) for i in range(len(previous_rates)-average_size+1)]
     
     change_moving_average_rates = [moving_average_previous_rates[i+1]/moving_average_previous_rates[i] for i in range(len(moving_average_previous_rates)-1)]
     
-    C1C2_rate = previous_rates[-1]
-    
-    if start_flag:
-        C2_balance += USDT_principal/C2USDT_rate
     
     
-    
-    input_values_test = []
-    target_values_test = []
-    
-    for i in range(len(change_moving_average_rates)-Trade_Models[0].input_count+1):
-        input_values_test += change_moving_average_rates[i:i+Trade_Models[0].input_count]
-    
-    for i in range(len(change_moving_average_rates)-Trade_Models[0].input_count-Trade_Models[0].output_count+1):
-        target_values_test += change_moving_average_rates[i+Trade_Models[0].input_count:i+Trade_Models[0].input_count+Trade_Models[0].output_count]
-    
-    Trade_Data.load([], [], [], [], input_values_test, target_values_test)
+    Trade_Data.load(input_values=change_moving_average_rates, target_values=[], stream=True, shift_count=1)
     
     recursive_output_values = [Decimal(0) for i in range(predicted_count)]
-    
-    for i in range(model_count):
-        Trade_Models[i].recursive_test(Trade_Data, loop_count=predicted_count, feedback_count=5, pivot_value=1, auto_adjust=False)
-        
-        for j in range(predicted_count):
-            recursive_output_values[j] += Trade_Models[i].recursive_output_values[-predicted_count+j]/Decimal(model_count)
+
+    Trade_Model.recursive_test(Trade_Data, loop_count=predicted_count, feedback_count=5, pivot_value=1, auto_adjust=False)
 
 
 
