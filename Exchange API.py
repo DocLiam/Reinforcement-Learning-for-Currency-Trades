@@ -45,10 +45,7 @@ class User:
             return self.__balance_A+quantity, self.__balance_B-unit_price*quantity
 
     def getValue(self):
-        return {
-                "Value in A" : self.__balance_A + self.getPrice()["avgBidPrice"]*self.__balance_B, 
-                "Value in B" : self.__balance_B + self.getPrice()["avgAskPrice"]*self.__balance_A
-            }
+        return self.__balance_A*last_ask_price, self.__balance_B
 
 class Order:
     def __init__(self, userID:int, ask:bool, unit_price:float, quantity:int):
@@ -79,7 +76,7 @@ class Order:
         UserObject = user_dict[self.__userID]
         
         new_balances = UserObject.testChangeBalance(self.__ask, self.__unit_price, self.__quantity)
-        print(new_balances)
+        
         if new_balances[0] < 0 or new_balances[1] < 0:
             return False
         else:
@@ -286,16 +283,31 @@ def getPrice():
         }
     
     return {"success" : False}
+
+@app.get("/getValue")
+def getValue():
+    if request.is_json:
+        request_data = request.get_json()
+        userObject = user_dict[request_data["userID"]]
+        
+        user_value = userObject.getValue()
+        
+        return {
+            "success" : True,
+            "valueA" : user_value[0],
+            "valueB" : user_value[1],
+            
+        }
+    
+    return {"success" : False}
     
 @app.get("/getCurrentPrice")
 def getCurrentPrice():
-    avg_price_data = OrderQueueObject.getAvgPrice()
-    
     return {
         "success" : True,
-        "avgAskPrice" : avg_price_data[0],
-        "avgBidPrice" : avg_price_data[1],
-        "avgPrice" : avg_price_data[2]
+        "avgAskPrice" : last_ask_price,
+        "avgBidPrice" : last_bid_price,
+        "avgPrice" : last_price
     }
 
 @app.get("/getHistoricPrices")
@@ -344,13 +356,18 @@ def placeOrder():
 
 def updatePrices():
     global historic_ask_prices, historic_bid_prices, historic_prices, time_passed
+    global last_ask_price, last_bid_price, last_price
     
     while True:
         avg_price_data = OrderQueueObject.getAvgPrice()
         
-        historic_ask_prices.append(1.0 if OrderQueueObject.askQueueEmpty() else avg_price_data[0]())
-        historic_bid_prices.append(1.0 if OrderQueueObject.bidQueueEmpty() else avg_price_data[1]())
-        historic_prices.append(1.0 if OrderQueueObject.askQueueEmpty() or OrderQueueObject.bidQueueEmpty() else avg_price_data[2]())
+        historic_ask_prices.append(last_ask_price if OrderQueueObject.askQueueEmpty() else avg_price_data[0]())
+        historic_bid_prices.append(last_bid_price if OrderQueueObject.bidQueueEmpty() else avg_price_data[1]())
+        historic_prices.append(last_price if OrderQueueObject.askQueueEmpty() or OrderQueueObject.bidQueueEmpty() else avg_price_data[2]())
+        
+        last_ask_price = historic_ask_prices[-1]
+        last_bid_price = historic_bid_prices[-1]
+        last_price = historic_prices[-1]
         
         sleep(1)
 
@@ -371,9 +388,13 @@ if __name__ == "__main__":
 
     OrderQueueObject = OrderQueue()
     
-    historic_ask_prices = []
-    historic_bid_prices = []
-    historic_prices = []
+    last_ask_price = 1.0
+    last_bid_price = 1.0
+    last_price = 1.0
+    
+    historic_ask_prices = [last_ask_price for i in range(600)]
+    historic_bid_prices = [last_bid_price for i in range(600)]
+    historic_prices = [last_price for i in range(600)]
     
     update_prices_thread = Thread(target=updatePrices, name="updatePrices")
     update_prices_thread.start()
