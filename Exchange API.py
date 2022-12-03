@@ -179,8 +179,6 @@ class OrderQueue():
                     TempOrder.subtractOrder(change_quantity)
                     OrderObject.subtractOrder(change_quantity)
                     
-                    self.__bid_quantity -= OrderObject.getQuantity()
-                    self.__bid_sum -= OrderObject.getPrice() * OrderObject.getQuantity()
                     self.removeOrder(not TempOrder.getAsk(), order_userID)
                 else:
                     change_quantity = TempOrder.getQuantity()
@@ -220,8 +218,6 @@ class OrderQueue():
                     TempOrder.subtractOrder(change_quantity)
                     OrderObject.subtractOrder(change_quantity)
                     
-                    self.__ask_quantity -= OrderObject.getQuantity()
-                    self.__ask_sum -= OrderObject.getPrice() * OrderObject.getQuantity()
                     self.removeOrder(not TempOrder.getAsk(), order_userID)
                 else:
                     change_quantity = TempOrder.getQuantity()
@@ -249,7 +245,7 @@ class OrderQueue():
         return (
             (lambda : self.__ask_sum/self.__ask_quantity), 
             (lambda : self.__bid_sum/self.__bid_quantity), 
-            (lambda : (self.__ask_sum/self.__ask_quantity + self.__bid_sum/self.__bid_quantity)/2.0)
+            (lambda : ((self.__ask_sum/self.__ask_quantity) + (self.__bid_sum/self.__bid_quantity))/2.0)
         )
 
     def visualiseQueue(self):
@@ -373,7 +369,7 @@ def updatePrices():
         last_bid_price = historic_bid_prices[-1]
         last_price = historic_prices[-1]
         
-        sleep(0.1)
+        sleep(1)
 
         print("Ask Price: ", historic_ask_prices[-1])
         print("Bid Price: ", historic_bid_prices[-1])

@@ -190,7 +190,6 @@ while True:
 
     
     
-    
     input_values_train = change_moving_average_rates[int(len(change_moving_average_rates)/2)+Trade_Model.input_count:]
     input_values_validate = change_moving_average_rates[:int(len(change_moving_average_rates)/2)]
     
