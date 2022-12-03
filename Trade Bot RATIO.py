@@ -55,7 +55,7 @@ while True:
     
     
     
-    Trade_Data_test.load(input_values=change_moving_average_rates, target_values=[], stream=True, shift_count=1)
+    Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=True, shift_count=1)
     
     Trade_Model.recursive_test(Trade_Data_test, loop_count=predicted_count, feedback_count=5, pivot_value=1, auto_adjust=False)
 
@@ -90,7 +90,7 @@ while True:
         compounded_multiplier_uncertainty = Decimal(1)
         
         for i in range(predicted_count):
-            compounded_multiplier_real *= change_moving_average_rates[Trade_Model.input_count+h+i]
+            compounded_multiplier_real *= change_moving_average_rates[h+Trade_Model.input_count+i]
             compounded_multiplier_uncertainty *= Trade_Model.recursive_output_values[i]
             
             uncertainty_level = compounded_multiplier_real-compounded_multiplier_uncertainty
@@ -162,7 +162,7 @@ while True:
         proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
     
 
-    desired_price = previous_rates[-1]
+    desired_price = sum(previous_rates[-predicted_count:])/Decimal(predicted_count)
     
     
     if proportion_change_A <= 0:
@@ -187,12 +187,6 @@ while True:
     print("\n")
     
     
-    plt.clf()
-    plt.plot(x_values, y_values_average)
-    plt.plot(x_values[-predicted_count:], y_values_lower)
-    plt.plot(x_values[-predicted_count:], y_values_upper)
-    plt.plot(x_values[:-predicted_count], previous_rates[-Trade_Model.input_count:])
-    plt.pause(0.001)
 
     
     
