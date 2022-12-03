@@ -9,7 +9,7 @@ print(x.json())
 
 y = requests.post(url+"/placeOrder", json={"userID" : x.json()["userID"],
                    "ask" : True,
-                   "unitPrice" : 0.7,
+                   "unitPrice" : 0.2,
                    "quantity" : 50.0})
 
 print(x.text)
@@ -20,7 +20,7 @@ print(x.json())
 
 y = requests.post(url+"/placeOrder", json={"userID" : x.json()["userID"],
                    "ask" : True,
-                   "unitPrice" : 1.7,
+                   "unitPrice" : 0.3,
                    "quantity" : 50.0})
 
 print(x.text)
@@ -31,7 +31,7 @@ print(x.json())
 
 y = requests.post(url+"/placeOrder", json={"userID" : x.json()["userID"],
                    "ask" : False,
-                   "unitPrice" : 0.4,
+                   "unitPrice" : 0.1,
                    "quantity" : 50.0})
 
 print(x.text)
@@ -42,7 +42,7 @@ print(x.json())
 
 y = requests.post(url+"/placeOrder", json={"userID" : x.json()["userID"],
                    "ask" : False,
-                   "unitPrice" : 1.4,
+                   "unitPrice" : 0.15,
                    "quantity" : 50.0})
 
 print(x.text)
