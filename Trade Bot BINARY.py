@@ -9,7 +9,7 @@ getcontext().prec = 64
 model_name = input("Model name: ")
 
 Trade_Model = Model_Class()
-Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0003, cycles=5)
+Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0001, cycles=5)
 
 Trade_Data_test = Data_Class()
 
@@ -39,6 +39,9 @@ last_balance_A = Decimal(request_getBalance["balanceA"])
 request_getValue = requests.get(url + "/getValue", json = {"userID" : userID}).json()
 
 start_flag = True
+
+last_input_values = []
+last_target_values = []
 
 action_values = []
 
@@ -103,7 +106,12 @@ while True:
     plt.pause(0.001)
     
     if last_balance_A != balance_A:
-        last_input_values = prev_input_values
+        last_input_values += prev_input_values
+        
+        if not start_flag:
+            action = last_decision if prev_value_total >= last_value_total else not last_decision
+            last_target_values += [Decimal(1) if action else Decimal(0)]
+        
         last_decision = prev_decision
         last_value_total = prev_value_total
         
@@ -118,8 +126,12 @@ while True:
     if not start_flag:
         action = last_decision if value_total >= last_value_total else not last_decision
         
-        Trade_Data_train.load(input_values=last_input_values, target_values=[Decimal(1) if action else Decimal(0)], stream=False, shift_count=Trade_Model.input_count)
-        Trade_Data_validate.load(input_values=[], target_values=[], stream=False, shift_count=Trade_Model.input_count)
+        temp_last_target_values = last_target_values + [Decimal(1) if action else Decimal(0)]
+        
+        halfway_index = len(temp_last_target_values)//2
+        
+        Trade_Data_train.load(input_values=last_input_values[halfway_index*Trade_Model.input_count:], target_values=temp_last_target_values[halfway_index:], stream=False, shift_count=Trade_Model.input_count)
+        Trade_Data_validate.load(input_values=last_input_values[:halfway_index*Trade_Model.input_count], target_values=temp_last_target_values[:halfway_index], stream=False, shift_count=Trade_Model.input_count)
         
         Trade_Model.train(Trade_Data_train, Trade_Data_validate)
         Trade_Model.save()
