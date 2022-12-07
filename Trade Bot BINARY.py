@@ -9,7 +9,7 @@ getcontext().prec = 64
 model_name = input("Model name: ")
 
 Trade_Model = Model_Class()
-Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0001, cycles=5)
+Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0005, cycles=5)
 
 Trade_Data_test = Data_Class()
 
