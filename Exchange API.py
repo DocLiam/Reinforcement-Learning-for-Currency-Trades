@@ -272,7 +272,7 @@ def register():
     return {"success" : False}
     
 @app.get("/getBalance")
-def getPrice():
+def getBalance():
     if request.is_json:
         request_data = request.get_json()
         userObject = user_dict[request_data["userID"]]
