@@ -63,7 +63,7 @@ while True:
     
     
     
-    Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=True, shift_count=1)
+    Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=False, shift_count=Trade_Model.input_count)
     
     Trade_Model.test(Trade_Data_test)
 

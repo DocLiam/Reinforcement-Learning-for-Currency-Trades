@@ -8,6 +8,8 @@ from DeepLearner import *
 
 getcontext().prec = 64
 
+fig = plt.figure(figsize = (10, 5))
+
 # variables : separate tokens by underscore
 # functions : first token is lowercase, every other token starts with capital
 
@@ -23,6 +25,11 @@ class User:
         self.__balance_A = balance_A
         self.__balance_B = balance_B
         
+        self.__initial_balance_A = balance_A
+        self.__initial_balance_B = balance_B
+        
+        self.value_change_values = []
+        
     def getUserID(self):
         return self.__userID
     
@@ -31,6 +38,12 @@ class User:
     
     def getBalanceB(self):
         return self.__balance_B
+
+    def getInitialBalanceA(self):
+        return self.__initial_balance_A
+    
+    def getInitialBalanceB(self):
+        return self.__initial_balance_B
         
     def changeBalance(self, ask:bool, unit_price:float, quantity:int):
         if ask:
@@ -48,6 +61,9 @@ class User:
 
     def getValue(self):
         return self.__balance_A*last_ask_price, self.__balance_B
+    
+    def getInitialValue(self):
+        return self.__initial_balance_A*last_ask_price, self.__initial_balance_B
 
 class Order:
     def __init__(self, userID:int, ask:bool, unit_price:float, quantity:int):
@@ -295,7 +311,7 @@ def getCurrentPrice():
     }
 
 def getHistoricPrices(request_data):
-    global time_dict
+    global time_dict, time_passed
     
     index = 0
     
@@ -343,7 +359,7 @@ def updatePrices():
         last_bid_price = historic_bid_prices[-1]
         last_price = historic_prices[-1]
         
-        sleep(1)
+        sleep(0.2)
 
         print("Ask Price: ", historic_ask_prices[-1])
         print("Bid Price: ", historic_bid_prices[-1])
@@ -358,7 +374,11 @@ def updatePrices():
         avg_value = 0
         
         for userID in user_dict:
-            user_value = user_dict[userID].getValue()
+            UserObject = user_dict[userID]
+            user_value = UserObject.getValue()
+            user_initial_value = UserObject.getInitialValue()
+            
+            UserObject.value_change_values.append((user_value[0]+user_value[1])/(user_initial_value[0]+user_initial_value[1]))
             
             avg_value += (user_value[0]+user_value[1])/len(user_dict)
             
@@ -370,22 +390,28 @@ def updatePrices():
             time_values = time_values[-200:]
         if len(value_values) > 200:
             value_values = value_values[-200:]
-        if len(historic_ask_prices) > 3000:
-            historic_ask_prices = historic_ask_prices[-3000:]
-        if len(historic_bid_prices) > 3000:
-            historic_bid_prices = historic_bid_prices[-3000:]
-        if len(historic_prices) > 3000:
-            historic_prices = historic_prices[-3000:]
+        if len(historic_ask_prices) > 600:
+            historic_ask_prices = historic_ask_prices[-600:]
+        if len(historic_bid_prices) > 600:
+            historic_bid_prices = historic_bid_prices[-600:]
+        if len(historic_prices) > 600:
+            historic_prices = historic_prices[-600:]
 
 def visualiseValue():
     while True:
         plt.clf()
-        plt.plot(time_values[-200:], historic_prices[-200:])
+        plt.plot(time_values[-60:], historic_prices[-60:])
+        for userID in user_dict:
+            UserObject = user_dict[userID]
+            
+            color = "red" if userID < 8 else "green"
+            
+            plt.plot(time_values[-min(60, len(UserObject.value_change_values)):], UserObject.value_change_values, color=color)
         plt.pause(0.001)
 
 def botRatio(model_name):
     Trade_Model = Model_Class()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000005, cycles=5)
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.00002, cycles=5)
 
     Trade_Data_test = Data_Class()
 
@@ -399,11 +425,9 @@ def botRatio(model_name):
 
     userID = request_register["userID"]
 
-    predicted_count = 10
+    predicted_count = 8
 
-    average_size = 6
-
-    start_flag = True
+    average_size = 5
 
 
 
@@ -429,7 +453,7 @@ def botRatio(model_name):
         
         
         
-        Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=True, shift_count=1)
+        Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=False, shift_count=Trade_Model.input_count)
         
         Trade_Model.recursive_test(Trade_Data_test, loop_count=predicted_count, feedback_count=5, pivot_value=1, auto_adjust=False)
 
@@ -449,11 +473,12 @@ def botRatio(model_name):
             compounded_actual_change.append((moving_average_previous_rates[-1]*(change+Decimal(1)))/unit_rate-Decimal(1))
 
 
+        step = 10
 
         uncertainty_values_lower = [Decimal(0) for i in range(predicted_count)]
         uncertainty_values_upper = [Decimal(0) for i in range(predicted_count)]
         
-        for h in range(0, len(change_moving_average_rates)-Trade_Model.input_count+1-predicted_count):
+        for h in range(0, len(change_moving_average_rates)-Trade_Model.input_count+1-predicted_count, step):
             Trade_Data_uncertainty.load(input_values=change_moving_average_rates[h:h+Trade_Model.input_count], target_values=[], stream=False, shift_count=Trade_Model.input_count)
             
             Trade_Model.recursive_test(Trade_Data_uncertainty, loop_count=predicted_count, feedback_count=1, pivot_value=1, auto_adjust=False)
@@ -536,7 +561,7 @@ def botRatio(model_name):
             proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
         
 
-        desired_price = sum(previous_rates[-predicted_count:])/Decimal(predicted_count)
+        desired_price = sum(y_values_average[-predicted_count:])/Decimal(predicted_count)
         
         
         if proportion_change_A <= 0:
@@ -564,12 +589,10 @@ def botRatio(model_name):
         
         if len(previous_rates) > 600:
             previous_rates = previous_rates[-600:]
-        
-        sleep(0.2)
 
 def botBinary(model_name):
     Trade_Model = Model_Class()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0005, cycles=5)
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0002, cycles=5)
 
     Trade_Data_test = Data_Class()
 
@@ -621,7 +644,7 @@ def botBinary(model_name):
         
         
         
-        Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=True, shift_count=1)
+        Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=False, shift_count=Trade_Model.input_count)
         
         Trade_Model.test(Trade_Data_test)
 
@@ -694,14 +717,14 @@ def botBinary(model_name):
         if len(action_values) > 120:
             action_values = action_values[-120:]
         
-        sleep(0.2)
+        sleep(0.1)
         
 
 if __name__ == "__main__":
     current_userID = -1
     user_dict = {}
     
-    time_passed = 3000
+    time_passed = 600
     time_dict = {}
 
     OrderQueueObject = OrderQueue()
@@ -710,54 +733,58 @@ if __name__ == "__main__":
     last_bid_price = 1.0
     last_price = 1.0
     
-    historic_ask_prices = [1.0 for i in range(time_passed)]
-    historic_bid_prices = [1.0 for i in range(time_passed)]
+    historic_ask_prices = [1.0+random() for i in range(time_passed)]
+    historic_bid_prices = [1.0+random() for i in range(time_passed)]
     historic_prices = [(historic_ask_prices[i]+historic_bid_prices[i])/2.0 for i in range(time_passed)]
     
     time_values = [i for i in range(time_passed)]
     value_values = [0 for i in range(time_passed)]
-    
-    model_name_ratio = input("Model name ratio: ")
-    
-    for i in range(8):
-        bot_ratio_thread = Thread(target=botRatio, name="botRatio", args=(model_name_ratio+str(i+1),))
-        bot_ratio_thread.start()
-        
-    model_name_binary = input("Model name binary: ")
-    
-    for i in range(6):
-        bot_binary_thread = Thread(target=botBinary, name="botBinary", args=(model_name_binary+str(i+1),))
-        bot_binary_thread.start()
 
     update_prices_thread = Thread(target=updatePrices, name="updatePrices")
     update_prices_thread.start()
     
-    fake_user1 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user1 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user1["userID"],
                    "ask" : True,
-                   "unitPrice" : 0.8,
-                   "quantity" : 50.0})
+                   "unitPrice" : 1.5,
+                   "quantity" : 500.0})
     
-    fake_user2 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user2 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user2["userID"],
                    "ask" : True,
-                   "unitPrice" : 0.9,
-                   "quantity" : 50.0})
+                   "unitPrice" : 1.1,
+                   "quantity" : 500.0})
     
-    fake_user3 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user3 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user3["userID"],
                    "ask" : False,
                    "unitPrice" : 0.25,
-                   "quantity" : 50.0})
+                   "quantity" : 500.0})
     
-    fake_user4 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user4 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user4["userID"],
                    "ask" : False,
                    "unitPrice" : 0.1,
-                   "quantity" : 50.0})
+                   "quantity" : 500.0})
+
+    sleep(2)
+
+    model_name_ratio = "BOTRATIO"
+    
+    for i in range(4):
+        bot_ratio_thread = Thread(target=botRatio, name="botRatio", args=(model_name_ratio+str(i+1),))
+        bot_ratio_thread.start()
+        sleep(0.5)
+        
+    model_name_binary = "BOTBINARY"
+    
+    for i in range(6):
+        bot_binary_thread = Thread(target=botBinary, name="botBinary", args=(model_name_binary+str(i+1),))
+        bot_binary_thread.start()
+        sleep(0.5)
     
     visualiseValue()

@@ -25,12 +25,9 @@ request_register = requests.get(url + "/register", json = {"startBalanceA" : 100
 
 userID = request_register["userID"]
 
-predicted_count = 10
+predicted_count = 15
 
-average_size = 6
-
-start_flag = True
-
+average_size = 5
 
 
 x_values = [i for i in range(Trade_Model.input_count+predicted_count)]
@@ -55,7 +52,7 @@ while True:
     
     
     
-    Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=True, shift_count=1)
+    Trade_Data_test.load(input_values=change_moving_average_rates[-Trade_Model.input_count:], target_values=[], stream=False, shift_count=Trade_Model.input_count)
     
     Trade_Model.recursive_test(Trade_Data_test, loop_count=predicted_count, feedback_count=5, pivot_value=1, auto_adjust=False)
 
@@ -162,7 +159,7 @@ while True:
         proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
     
 
-    desired_price = sum(previous_rates[-predicted_count:])/Decimal(predicted_count)
+    desired_price = sum(y_values_average[-predicted_count:])/Decimal(predicted_count)
     
     
     if proportion_change_A <= 0:
