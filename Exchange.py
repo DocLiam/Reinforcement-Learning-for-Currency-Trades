@@ -404,9 +404,9 @@ def visualiseValue():
         for userID in user_dict:
             UserObject = user_dict[userID]
             
-            color = "red" if userID < 8 else "green"
+            color = "red" if userID < 20 else "green"
             
-            plt.plot(time_values[-min(60, len(UserObject.value_change_values)):], UserObject.value_change_values, color=color)
+            plt.plot(time_values[-min(60, len(UserObject.value_change_values)):], UserObject.value_change_values[-60:], color=color)
         plt.pause(0.001)
 
 def botRatio(model_name):
@@ -473,7 +473,7 @@ def botRatio(model_name):
             compounded_actual_change.append((moving_average_previous_rates[-1]*(change+Decimal(1)))/unit_rate-Decimal(1))
 
 
-        step = 10
+        step = 5
 
         uncertainty_values_lower = [Decimal(0) for i in range(predicted_count)]
         uncertainty_values_upper = [Decimal(0) for i in range(predicted_count)]
@@ -673,11 +673,6 @@ def botBinary(model_name):
         
         
 
-        print("Action: " + str(Trade_Model.output_values[-1]))
-        print("Value of A: " + str(float(value_A)))
-        print("Value of B: " + str(float(value_B)))
-        print("Total value: " + str(float(value_total)))
-        print("\n")
         
         action_values += [Trade_Model.output_values[-1]]
         
@@ -775,14 +770,14 @@ if __name__ == "__main__":
 
     model_name_ratio = "BOTRATIO"
     
-    for i in range(4):
+    for i in range(16):
         bot_ratio_thread = Thread(target=botRatio, name="botRatio", args=(model_name_ratio+str(i+1),))
         bot_ratio_thread.start()
         sleep(0.5)
         
     model_name_binary = "BOTBINARY"
     
-    for i in range(6):
+    for i in range(2):
         bot_binary_thread = Thread(target=botBinary, name="botBinary", args=(model_name_binary+str(i+1),))
         bot_binary_thread.start()
         sleep(0.5)
