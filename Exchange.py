@@ -580,8 +580,8 @@ def botRatio(model_name):
         request_placeOrder = placeOrder(order_data)
         
         
-        input_values_train = change_moving_average_rates[int(len(change_moving_average_rates)/2)+Trade_Model.input_count:]
-        input_values_validate = change_moving_average_rates[:int(len(change_moving_average_rates)/2)]
+        input_values_train = change_moving_average_rates[len(change_moving_average_rates)//2:]
+        input_values_validate = change_moving_average_rates[:len(change_moving_average_rates)//2]
         
         Trade_Data_train.load(input_values=input_values_train, target_values=[], stream=True, shift_count=1)
         Trade_Data_validate.load(input_values=input_values_validate, target_values=[], stream=True, shift_count=1)
