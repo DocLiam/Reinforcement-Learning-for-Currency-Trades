@@ -8,8 +8,6 @@ from DeepLearner import *
 
 getcontext().prec = 64
 
-fig = plt.figure(figsize = (10, 5))
-
 # variables : separate tokens by underscore
 # functions : first token is lowercase, every other token starts with capital
 
@@ -262,7 +260,7 @@ class OrderQueue():
         return (
             (lambda : self.__ask_sum/self.__ask_quantity), 
             (lambda : self.__bid_sum/self.__bid_quantity), 
-            (lambda : ((self.__ask_sum/self.__ask_quantity) + (self.__bid_sum/self.__bid_quantity))/2.0)
+            (lambda : ((self.__ask_sum/self.__ask_quantity)+(self.__bid_sum/self.__bid_quantity))/2.0)
         )
 
     def visualiseQueue(self):
@@ -400,11 +398,11 @@ def updatePrices():
 def visualiseValue():
     while True:
         plt.clf()
-        plt.plot(time_values[-60:], historic_prices[-60:])
+        plt.plot(time_values[-60:], [sum(historic_prices[i:i+6])/6.0 for i in range(len(historic_prices)-5)][-60:])
         for userID in user_dict:
             UserObject = user_dict[userID]
             
-            color = "red" if userID < 20 else "green"
+            color = "red" if userID < 12 else "green"
             
             plt.plot(time_values[-min(60, len(UserObject.value_change_values)):], UserObject.value_change_values[-60:], color=color)
         plt.pause(0.001)
@@ -435,6 +433,8 @@ def botRatio(model_name):
 
     request_getHistoricPrices = getHistoricPrices({"userID" : userID, "onlyRecent" : False})
     previous_rates = [Decimal(i) for i in request_getHistoricPrices["avgPrice"]]
+    
+    i = 0
 
     while True:
         request_getBalance = getBalance({"userID" : userID})
@@ -561,7 +561,9 @@ def botRatio(model_name):
             proportion_change_B = Decimal(1)-target_proportion_B/actual_proportion_B
         
 
-        desired_price = sum(y_values_average[-predicted_count:])/Decimal(predicted_count)
+        #desired_price = (sum(y_values_average[-predicted_count:])/Decimal(predicted_count))
+        
+        desired_price = (Decimal(unit_rate*unit_rate)/y_values_average[-predicted_count//2])
         
         
         if proportion_change_A <= 0:
@@ -585,10 +587,14 @@ def botRatio(model_name):
         Trade_Data_validate.load(input_values=input_values_validate, target_values=[], stream=True, shift_count=1)
         
         Trade_Model.train(Trade_Data_train, Trade_Data_validate)
-        Trade_Model.save()
+        
+        if i%3 == 0:
+            Trade_Model.save()
         
         if len(previous_rates) > 600:
             previous_rates = previous_rates[-600:]
+        
+        i += 1
 
 def botBinary(model_name):
     Trade_Model = Model_Class()
@@ -625,6 +631,8 @@ def botBinary(model_name):
     last_target_values = []
 
     action_values = []
+    
+    i = 0
 
     while True:
         request_getBalance = getBalance({"userID" : userID})
@@ -657,16 +665,20 @@ def botBinary(model_name):
         
         value_total = value_A + value_B
         
+        request_getCurrentPrice = getCurrentPrice()
+        
+        unit_ask_price = unit_rate
+        unit_bid_price = unit_rate
         
         if Trade_Model.output_values[-1] >= 0.5:
             order_data = {"userID" : userID,
                         "ask" : False,
-                        "unitPrice" : float(unit_rate),
-                        "quantity" : float(balance_B/unit_rate)}
+                        "unitPrice" : float(unit_ask_price),
+                        "quantity" : float(balance_B/unit_ask_price)}
         if Trade_Model.output_values[-1] < 0.5:
             order_data = {"userID" : userID,
                         "ask" : True,
-                        "unitPrice" : float(unit_rate),
+                        "unitPrice" : float(unit_bid_price),
                         "quantity" : float(balance_A)}
         
         request_placeOrder = placeOrder(order_data)
@@ -705,12 +717,16 @@ def botBinary(model_name):
             Trade_Data_validate.load(input_values=last_input_values[:halfway_index*Trade_Model.input_count], target_values=temp_last_target_values[:halfway_index], stream=False, shift_count=Trade_Model.input_count)
             
             Trade_Model.train(Trade_Data_train, Trade_Data_validate)
-            Trade_Model.save()
+            
+            if i%3 == 0:
+                Trade_Model.save()
         
         if len(previous_rates) > 600:
             previous_rates = previous_rates[-600:]
         if len(action_values) > 120:
             action_values = action_values[-120:]
+        
+        i += 1
         
         sleep(0.1)
         
@@ -728,8 +744,8 @@ if __name__ == "__main__":
     last_bid_price = 1.0
     last_price = 1.0
     
-    historic_ask_prices = [1.0+random() for i in range(time_passed)]
-    historic_bid_prices = [1.0+random() for i in range(time_passed)]
+    historic_ask_prices = [1.0+random()/10.0 for i in range(time_passed)]
+    historic_bid_prices = [1.0+random()/10.0 for i in range(time_passed)]
     historic_prices = [(historic_ask_prices[i]+historic_bid_prices[i])/2.0 for i in range(time_passed)]
     
     time_values = [i for i in range(time_passed)]
@@ -738,39 +754,39 @@ if __name__ == "__main__":
     update_prices_thread = Thread(target=updatePrices, name="updatePrices")
     update_prices_thread.start()
     
-    fake_user1 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
+    fake_user1 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
     
     placeOrder({"userID" : fake_user1["userID"],
                    "ask" : True,
-                   "unitPrice" : 1.5,
-                   "quantity" : 500.0})
+                   "unitPrice" : 1.03,
+                   "quantity" : 50.0})
     
-    fake_user2 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
+    fake_user2 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
     
     placeOrder({"userID" : fake_user2["userID"],
                    "ask" : True,
-                   "unitPrice" : 1.1,
-                   "quantity" : 500.0})
+                   "unitPrice" : 1.04,
+                   "quantity" : 50.0})
     
-    fake_user3 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
+    fake_user3 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
     
     placeOrder({"userID" : fake_user3["userID"],
                    "ask" : False,
-                   "unitPrice" : 0.25,
-                   "quantity" : 500.0})
+                   "unitPrice" : 0.96,
+                   "quantity" : 50.0})
     
-    fake_user4 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
+    fake_user4 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
     
     placeOrder({"userID" : fake_user4["userID"],
                    "ask" : False,
-                   "unitPrice" : 0.1,
-                   "quantity" : 500.0})
+                   "unitPrice" : 0.98,
+                   "quantity" : 50.0})
 
-    sleep(2)
+    sleep(1)
 
     model_name_ratio = "BOTRATIO"
     
-    for i in range(16):
+    for i in range(8):
         bot_ratio_thread = Thread(target=botRatio, name="botRatio", args=(model_name_ratio+str(i+1),))
         bot_ratio_thread.start()
         sleep(0.5)
