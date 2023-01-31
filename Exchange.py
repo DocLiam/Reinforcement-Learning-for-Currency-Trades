@@ -4,7 +4,8 @@ from threading import *
 from time import *
 import matplotlib.pyplot as plt
 from random import *
-from DeepLearner import *
+from DeepLearningOptimized import Data_DL
+from DeepLearningOptimized import Model_DL
 
 getcontext().prec = 64
 
@@ -408,15 +409,15 @@ def visualiseValue():
         plt.pause(0.001)
 
 def botRatio(model_name):
-    Trade_Model = Model_Class()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.00002, cycles=5)
+    Trade_Model = Model_DL.model()
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.00001, cycles=10)
 
-    Trade_Data_test = Data_Class()
+    Trade_Data_test = Data_DL.data()
 
-    Trade_Data_train = Data_Class()
-    Trade_Data_validate = Data_Class()
+    Trade_Data_train = Data_DL.data()
+    Trade_Data_validate = Data_DL.data()
 
-    Trade_Data_uncertainty = Data_Class()
+    Trade_Data_uncertainty = Data_DL.data()
 
 
     request_register = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
@@ -597,13 +598,13 @@ def botRatio(model_name):
         i += 1
 
 def botBinary(model_name):
-    Trade_Model = Model_Class()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0002, cycles=5)
+    Trade_Model = Model_DL.model()
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=5)
 
-    Trade_Data_test = Data_Class()
+    Trade_Data_test = Data_DL.data()
 
-    Trade_Data_train = Data_Class()
-    Trade_Data_validate = Data_Class()
+    Trade_Data_train = Data_DL.data()
+    Trade_Data_validate = Data_DL.data()
 
 
     request_register = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})

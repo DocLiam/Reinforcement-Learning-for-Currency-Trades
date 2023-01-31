@@ -1,22 +1,24 @@
 import matplotlib.pyplot as plt
-from DeepLearner import *
+from DeepLearningOptimized import Data_DL
+from DeepLearningOptimized import Model_DL
 from decimal import *
 from time import *
 import requests
+from random import *
 
 getcontext().prec = 64
 
 model_name = input("Model name: ")
 
-Trade_Model = Model_Class()
+Trade_Model = Model_DL.model()
 Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0000005, cycles=5)
 
-Trade_Data_test = Data_Class()
+Trade_Data_test = Data_DL.data()
 
-Trade_Data_train = Data_Class()
-Trade_Data_validate = Data_Class()
+Trade_Data_train = Data_DL.data()
+Trade_Data_validate = Data_DL.data()
 
-Trade_Data_uncertainty = Data_Class()
+Trade_Data_uncertainty = Data_DL.data()
 
 
 url = "http://127.0.0.1:8080"

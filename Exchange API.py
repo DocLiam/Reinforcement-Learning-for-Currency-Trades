@@ -4,6 +4,7 @@ from decimal import *
 from threading import *
 from time import *
 import matplotlib.pyplot as plt
+from random import *
 
 app = Flask(__name__)
 
@@ -422,9 +423,9 @@ if __name__ == "__main__":
     last_bid_price = 1.0
     last_price = 1.0
     
-    historic_ask_prices = [last_ask_price for i in range(time_passed)]
-    historic_bid_prices = [last_bid_price for i in range(time_passed)]
-    historic_prices = [last_price for i in range(time_passed)]
+    historic_ask_prices = [last_ask_price+random()/10 for i in range(time_passed)]
+    historic_bid_prices = [last_bid_price+random()/10 for i in range(time_passed)]
+    historic_prices = [(historic_ask_prices[i]+historic_bid_prices[i])/2 for i in range(time_passed)]
     
     time_values = [i for i in range(time_passed)]
     value_values = [0 for i in range(time_passed)]
