@@ -403,14 +403,14 @@ def visualiseValue():
         for userID in user_dict:
             UserObject = user_dict[userID]
             
-            color = "red" if userID < 12 else "green"
+            color = "red" if userID < 28 else "green"
             
             plt.plot(time_values[-min(60, len(UserObject.value_change_values)):], UserObject.value_change_values[-60:], color=color)
         plt.pause(0.001)
 
 def botRatio(model_name):
     Trade_Model = Model_DL.model()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.00001, cycles=10)
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0001, cycles=15)
 
     Trade_Data_test = Data_DL.data()
 
@@ -426,7 +426,7 @@ def botRatio(model_name):
 
     predicted_count = 8
 
-    average_size = 5
+    average_size = 6
 
 
 
@@ -599,7 +599,7 @@ def botRatio(model_name):
 
 def botBinary(model_name):
     Trade_Model = Model_DL.model()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=5)
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.00001, cycles=15)
 
     Trade_Data_test = Data_DL.data()
 
@@ -755,39 +755,39 @@ if __name__ == "__main__":
     update_prices_thread = Thread(target=updatePrices, name="updatePrices")
     update_prices_thread.start()
     
-    fake_user1 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user1 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user1["userID"],
                    "ask" : True,
-                   "unitPrice" : 1.03,
-                   "quantity" : 50.0})
+                   "unitPrice" : 1.05,
+                   "quantity" : 500.0})
     
-    fake_user2 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user2 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user2["userID"],
                    "ask" : True,
-                   "unitPrice" : 1.04,
-                   "quantity" : 50.0})
+                   "unitPrice" : 1.07,
+                   "quantity" : 500.0})
     
-    fake_user3 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user3 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user3["userID"],
                    "ask" : False,
-                   "unitPrice" : 0.96,
-                   "quantity" : 50.0})
+                   "unitPrice" : 0.9,
+                   "quantity" : 500.0})
     
-    fake_user4 = register({"startBalanceA" : 100.0, "startBalanceB" : 100.0})
+    fake_user4 = register({"startBalanceA" : 1000.0, "startBalanceB" : 1000.0})
     
     placeOrder({"userID" : fake_user4["userID"],
                    "ask" : False,
                    "unitPrice" : 0.98,
-                   "quantity" : 50.0})
+                   "quantity" : 500.0})
 
     sleep(1)
 
     model_name_ratio = "BOTRATIO"
     
-    for i in range(8):
+    for i in range(24):
         bot_ratio_thread = Thread(target=botRatio, name="botRatio", args=(model_name_ratio+str(i+1),))
         bot_ratio_thread.start()
         sleep(0.5)
