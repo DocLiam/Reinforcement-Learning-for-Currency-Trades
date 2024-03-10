@@ -410,7 +410,7 @@ def visualiseValue():
 
 def botRatio(model_name):
     Trade_Model = Model_DL.model()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.0001, cycles=15)
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=15)
 
     Trade_Data_test = Data_DL.data()
 
@@ -564,7 +564,7 @@ def botRatio(model_name):
 
         #desired_price = (sum(y_values_average[-predicted_count:])/Decimal(predicted_count))
         
-        desired_price = (Decimal(unit_rate*unit_rate)/y_values_average[-predicted_count//2])
+        desired_price = (Decimal(unit_rate*unit_rate)/y_values_average[-predicted_count//2])*Decimal(1.0+random()/10.0-0.05)
         
         
         if proportion_change_A <= 0:
@@ -599,7 +599,7 @@ def botRatio(model_name):
 
 def botBinary(model_name):
     Trade_Model = Model_DL.model()
-    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.00001, cycles=15)
+    Trade_Model.load(model_name, min_diff=0.00000001, learning_rate=0.000001, cycles=15)
 
     Trade_Data_test = Data_DL.data()
 
